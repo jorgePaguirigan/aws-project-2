@@ -64,9 +64,18 @@ _bedrock_runtime = boto3.client("bedrock-agent-runtime", region_name=REGION)
 
 # ── Namespace Helper ──────────────────────────────────────────────────────────
 def get_namespaces(mem_client: MemoryClient, memory_id: str) -> Dict:
-    """Return a dict mapping strategy type → namespace template string."""
+    """Return a dict mapping strategy type → namespace template string.
+
+    Reads `namespaceTemplates` (current API field) or falls back to the
+    legacy `namespaces` field, whichever the strategy dict provides.
+    """
     strategies = mem_client.get_memory_strategies(memory_id)
-    return {s["type"]: s["namespaces"][0] for s in strategies}
+    namespaces = {}
+    for s in strategies:
+        templates = s.get("namespaceTemplates") or s.get("namespaces")
+        if templates:
+            namespaces[s["type"]] = templates[0]
+    return namespaces
 
 
 # ── Memory Hook ────────────────────────────────────────────────────────────────
@@ -260,8 +269,8 @@ while floored_points > 0:
     floored_points -= 500
 
 subtotal_after_points = order_total - points_redeemed_value
-tier_discount_rate = tier_rates.get(tier, 0.0)
-tier_discount = round(subtotal_after_points * tier_discount_rate, 2)
+tier_discount_pct = tier_rates.get(tier, 0.0)
+tier_discount = round(subtotal_after_points * tier_discount_pct, 2)
 final_total = round(subtotal_after_points - tier_discount, 2)
 
 total_savings = round(points_redeemed_value + tier_discount, 2)
@@ -271,7 +280,7 @@ remaining_points = loyalty_points - points_redeemed + points_earned
 result = {{
     "points_redeemed": points_redeemed,
     "points_redeemed_value": round(points_redeemed_value, 2),
-    "tier_discount_rate": tier_discount_rate,
+    "tier_discount_pct": tier_discount_pct,
     "tier_discount": tier_discount,
     "final_total": final_total,
     "total_savings": total_savings,
@@ -299,14 +308,15 @@ print(json.dumps(result))
     except Exception as e:
         logger.warning(f"Code Interpreter unavailable, using fallback: {e}")
         tier_rates = {"Silver": 0.00, "Gold": 0.10, "Platinum": 0.15}
-        tier_discount_rate = tier_rates.get(tier, 0.0)
-        tier_discount = round(order_total * tier_discount_rate, 2)
+        tier_discount_pct = tier_rates.get(tier, 0.0)
+        tier_discount = round(order_total * tier_discount_pct, 2)
         final_total = round(order_total - tier_discount, 2)
         fallback_result = {
             "points_redeemed": 0,
-            "tier_discount_rate": tier_discount_rate,
+            "tier_discount_pct": tier_discount_pct,
             "tier_discount": tier_discount,
             "final_total": final_total,
+            "remaining_points": loyalty_points,
             "note": "Code Interpreter unavailable — points redemption not calculated",
             "error": str(e),
         }
