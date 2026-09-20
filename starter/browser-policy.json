@@ -1,0 +1,16 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:StartBrowserSession",
+        "bedrock-agentcore:StopBrowserSession",
+        "bedrock-agentcore:GetBrowserSession",
+        "bedrock-agentcore:ListBrowserSessions",
+        "bedrock-agentcore:ConnectBrowserAutomationStream"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
