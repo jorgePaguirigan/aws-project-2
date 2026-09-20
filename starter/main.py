@@ -37,8 +37,12 @@ from bedrock_agentcore.tools.code_interpreter_client import code_session
 from strands_tools.browser import AgentCoreBrowser
 
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("CSAI_Agent")
+
+# strands_tools swallows browser exceptions at its own logger
+logging.getLogger("strands_tools.browser").setLevel(logging.DEBUG)
+logging.getLogger("bedrock_agentcore").setLevel(logging.DEBUG)
 
 # ── App Initialisation ────────────────────────────────────────────────────────
 app = BedrockAgentCoreApp()
@@ -396,6 +400,6 @@ def main():
 
 
 if __name__ == "__main__":
-    app.run()
+    # app.run()
     # Uncomment the line below and comment app.run() for local CLI testing:
-    # main()
+    main()
